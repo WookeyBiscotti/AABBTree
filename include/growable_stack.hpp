@@ -1,11 +1,11 @@
 #pragma once
 
+#include "typedefs.hpp"
+
 #include <cstdlib>
 #include <cstring>
 
 namespace biss {
-
-using uint = unsigned long;
 
 template<typename T, uint N>
 class GrowableStack {

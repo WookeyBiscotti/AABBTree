@@ -35,6 +35,44 @@ class BarMove {
 	OpsCount& o;
 };
 
+struct Vec2f {
+	float x;
+	float y;
+};
+
+struct AABB2f {
+	Vec2f lb;
+	Vec2f ub;
+};
+
+namespace biss {
+template<>
+float get<Vec2f, float>(uint i, const Vec2f& v) {
+	if (i == 0) {
+		return v.x;
+	} else {
+		return v.y;
+	}
+}
+
+template<>
+float get_lb<AABB2f, float>(uint i, const AABB2f& aabb) {
+	return get<Vec2f, float>(i, aabb.lb);
+}
+
+template<>
+float get_ub<AABB2f, float>(uint i, const AABB2f& aabb) {
+    return get<Vec2f, float>(i, aabb.ub);
+}
+
+template<class UserAABBType, class UserVecType>
+UserVecType get_lb(const UserAABBType& aabb);
+
+template<class UserAABBType, class UserVecType>
+UserVecType get_ub(const UserAABBType& aabb);
+
+} // namespace biss
+
 TEST_CASE("Index", "[Index]") {
 	SECTION("Emplace simple value into index") {
 		Indexer<int> index;
@@ -217,7 +255,7 @@ TEST_CASE("AABBTree", "[AABBTree]") {
 	}
 	SECTION("Erase from tree") {
 		AABBTree<AABB<float, 2>, 2, float> tree(0);
-		std::vector<decltype(tree)::index_t> idxs;
+		std::vector<index_t> idxs;
 		AABB<float, 2> tester{Vec<float, 2>{400}, Vec<float, 2>{500}};
 		for (int i = 0; i != 1000; ++i) {
 			Vec<float, 2> lb;
@@ -239,7 +277,7 @@ TEST_CASE("AABBTree", "[AABBTree]") {
 	}
 	SECTION("Move tree elements") {
 		AABBTree<AABB<float, 2>, 2, float> tree(0);
-		std::vector<decltype(tree)::index_t> idxs;
+		std::vector<index_t> idxs;
 		AABB<float, 2> tester{Vec<float, 2>{400}, Vec<float, 2>{500}};
 		for (int i = 0; i != 1000; ++i) {
 			Vec<float, 2> lb;
@@ -276,5 +314,52 @@ TEST_CASE("AABBTree", "[AABBTree]") {
 		});
 
 		REQUIRE(count == 0);
+	}
+	SECTION("For loop") {
+		AABBTree<AABB<float, 2>, 2, float> tree(0);
+		std::vector<index_t> idxs;
+		AABB<float, 2> tester{Vec<float, 2>{400}, Vec<float, 2>{500}};
+		for (int i = 0; i != 1000; ++i) {
+			Vec<float, 2> lb;
+			lb.point[0] = rand() % 1000;
+			lb.point[1] = rand() % 1000;
+			Vec<float, 2> ub;
+			ub.point[0] = lb.point[0] + (rand() % 1000);
+			ub.point[1] = lb.point[1] + (rand() % 1000);
+
+			const auto aabb = AABB<float, 2>{lb, ub};
+			idxs.push_back(tree.emplace(aabb, aabb));
+		}
+
+		for (auto& d : tree) {}
+	}
+	SECTION("User vec, aabb") {
+		AABBTree<AABB<float, 2>, 2, float> tree(0);
+		std::vector<index_t> idxs;
+		AABB<float, 2> tester{Vec<float, 2>{400}, Vec<float, 2>{500}};
+		for (int i = 0; i != 1000; ++i) {
+			Vec<float, 2> lb;
+			lb.point[0] = rand() % 1000;
+			lb.point[1] = rand() % 1000;
+			Vec<float, 2> ub;
+			ub.point[0] = lb.point[0] + (rand() % 1000);
+			ub.point[1] = lb.point[1] + (rand() % 1000);
+
+			const auto aabb = AABB<float, 2>{lb, ub};
+			idxs.push_back(tree.emplace(aabb, aabb));
+		}
+
+		int count = 0;
+		for (auto idx : idxs) {
+			Vec2f lb;
+			lb.x = rand() % 1000;
+			lb.y = rand() % 1000;
+			Vec2f ub;
+			ub.x = lb.x + (rand() % 1000);
+			ub.y = lb.y + (rand() % 1000);
+
+			const auto aabb = AABB2f{lb, ub};
+			tree.update(idx, aabb, Vec2f{0,0});
+		}
 	}
 }

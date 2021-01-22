@@ -1,152 +1,17 @@
 #pragma once
 
+#include "aabb.hpp"
+#include "aabb_tree_iterator.hpp"
 #include "growable_stack.hpp"
 #include "indexer.hpp"
 
 namespace biss {
 
-template<class Type, uint N>
-struct Vec {
-	Type point[N];
-
-	Vec() = default;
-	Vec(Type val) {
-		for (uint i = 0; i != N; ++i) {
-			point[i] = val;
-		}
-	}
-	auto& operator+=(const Vec& other) {
-		for (uint i = 0; i != N; ++i) {
-			point[i] += other.point[i];
-		}
-		return *this;
-	}
-	auto& operator-=(const Vec& other) {
-		for (uint i = 0; i != N; ++i) {
-			point[i] -= other.point[i];
-		}
-		return *this;
-	}
-	auto& operator*=(Type m) {
-		for (uint i = 0; i != N; ++i) {
-			point[i] *= m;
-		}
-		return *this;
-	}
-	bool isZero() const {
-		for (uint i = 0; i != N; ++i) {
-			if (point[i] != Type{0}) {
-				return false;
-			}
-		}
-		return true;
-	}
-};
-template<class Type, uint N>
-Vec<Type, N> operator-(const Vec<Type, N>& a, const Vec<Type, N>& b) {
-	return Vec<Type, N>{a} -= b;
-}
-template<class Type, uint N>
-Vec<Type, N> operator+(const Vec<Type, N>& a, const Vec<Type, N>& b) {
-	return Vec<Type, N>{a} += b;
-}
-template<class Type, uint N>
-Vec<Type, N> operator*(const Vec<Type, N>& a, Type b) {
-	return Vec<Type, N>{a} *= b;
-}
-template<class Type, uint N>
-Vec<Type, N> operator*(Type b, const Vec<Type, N>& a) {
-	return Vec<Type, N>{a} *= b;
-}
-
-template<class Type, uint N>
-struct AABB {
-	using Vec_t = Vec<Type, N>;
-
-	Vec_t lb; // lowerBound
-	Vec_t ub; // upperBound
-
-	auto& unite(const AABB& other) {
-		for (uint i = 0; i != N; ++i) {
-			if (lb.point[i] > other.lb.point[i]) {
-				lb.point[i] = other.lb.point[i];
-			}
-			if (ub.point[i] < other.ub.point[i]) {
-				ub.point[i] = other.ub.point[i];
-			}
-		}
-
-		return *this;
-	}
-
-	bool isIntersecting(const AABB& other) const {
-		const auto d1 = other.lb - ub;
-		for (uint i = 0; i != N; ++i) {
-			if (d1.point[i] > 0) {
-				return false;
-			}
-		}
-
-		const auto d2 = lb - other.ub;
-		for (uint i = 0; i != N; ++i) {
-			if (d2.point[i] > 0) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	bool contains(const AABB& other) const {
-		for (uint i = 0; i != N; ++i) {
-			if (lb.point[i] > other.lb.point[i] || ub.point[i] < other.ub.point[i]) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	// for 2d perimeter
-	// for 3d area
-	Type area() const {
-		const auto d = ub - lb;
-		if constexpr (N == 1) {
-			return d.point[0];
-		}
-		// with -O2 compilers generate same code
-		//		if constexpr (N == 2) {
-		//			return 2 * (d.point[0] + d.point[1]);
-		//		}
-		//		if constexpr (N == 3) {
-		//			return 2 * (d.point[0] * d.point[1] + d.point[1] * d.point[2] + d.point[2] * d.point[0]);
-		//		}
-
-		Type a = 0;
-		for (uint i = 0; i != N; ++i) {
-			Type subA = 1;
-			for (uint j = 0; j != N; ++j) {
-				if (i == j) {
-					continue;
-				}
-				subA *= d.point[j];
-			}
-			a += subA;
-		}
-
-		return 2 * a;
-	}
-};
-
-template<class Type, uint N>
-AABB<Type, N> unite(const AABB<Type, N>& aabb1, const AABB<Type, N>& aabb2) {
-	return AABB<Type, N>{aabb1}.unite(aabb2);
-}
-
 template<class ValueType, uint N, class KeyElementType>
 class AABBTree {
   public:
 	using AABB_t = AABB<KeyElementType, N>;
-	using index_t = typename Indexer<void*>::index_t;
+	using Iterator = AABBTreeIterator<ValueType>;
 
 	explicit AABBTree(KeyElementType aabbExtension = 0, KeyElementType aabbMultiplier = 0) noexcept;
 
@@ -157,14 +22,21 @@ class AABBTree {
 
 	template<typename T>
 	void query(const AABB_t& aabb, const T& callback) const;
+	template<class AABBType, typename T>
+	void query(const AABBType& aabb, const T& callback) const;
 
 	void update(
 	    index_t idx, const AABB_t& aabb, const typename AABB_t::Vec_t& displacement = typename AABB_t::Vec_t(0));
+	template<class AABBType, class VecType>
+	void update(index_t idx, const AABBType& aabb, const VecType& displacement);
 
 	ValueType& operator[](index_t idx);
 	const ValueType& operator[](index_t idx) const;
 
 	uint count() const;
+
+	Iterator begin() const { return Iterator(_data.begin()); }
+	Iterator end() const { return Iterator(_data.end()); }
 
   private:
 	struct Node {
@@ -190,14 +62,12 @@ class AABBTree {
 
 	index_t balance(index_t iA);
 
-	void validate() const;
-
   private:
 	const KeyElementType _aabbExtension;
 	const KeyElementType _aabbMultiplier;
 
 	Indexer<Node> _nodes;
-	Indexer<ValueType> _data;
+	Indexer<AABBTreeData<ValueType>> _data;
 	index_t _root;
 };
 
@@ -207,7 +77,7 @@ AABBTree<ValueType, N, KeyElementType>::AABBTree(KeyElementType aabbExtension, K
 }
 
 template<class ValueType, uint N, class KeyElementType>
-void AABBTree<ValueType, N, KeyElementType>::insertLeaf(AABBTree::index_t leafIdx) {
+void AABBTree<ValueType, N, KeyElementType>::insertLeaf(index_t leafIdx) {
 	if (_root == nullindex) {
 		_root = leafIdx;
 		_nodes[leafIdx].parent = nullindex;
@@ -281,13 +151,9 @@ void AABBTree<ValueType, N, KeyElementType>::insertLeaf(AABBTree::index_t leafId
 	sibling.parent = newParentIdx;
 	leaf.parent = newParentIdx;
 
-	validate();
-
 	index_t idx = leaf.parent;
 	while (idx != nullindex) {
-		validate();
 		idx = balance(idx);
-		validate();
 		Node& current = _nodes[idx];
 
 		Node& child1 = _nodes[current.child1];
@@ -297,16 +163,14 @@ void AABBTree<ValueType, N, KeyElementType>::insertLeaf(AABBTree::index_t leafId
 		current.aabb = unite(child1.aabb, child2.aabb);
 
 		idx = current.parent;
-		validate();
 	}
 }
 
 template<class ValueType, uint N, class KeyElementType>
 template<class... Args>
-typename AABBTree<ValueType, N, KeyElementType>::index_t AABBTree<ValueType, N, KeyElementType>::emplace(
-    const AABBTree::AABB_t& aabb, Args&&... args) {
-	const auto dataIdx = _data.emplace(std::forward<Args>(args)...);
+index_t AABBTree<ValueType, N, KeyElementType>::emplace(const AABBTree::AABB_t& aabb, Args&&... args) {
 	const auto leafIdx = _nodes.create();
+	const auto dataIdx = _data.emplace(leafIdx, std::forward<Args>(args)...);
 
 	Node& leaf = _nodes[leafIdx];
 	if (_aabbExtension != KeyElementType{0}) {
@@ -325,8 +189,7 @@ typename AABBTree<ValueType, N, KeyElementType>::index_t AABBTree<ValueType, N, 
 }
 
 template<class ValueType, uint N, class KeyElementType>
-typename AABBTree<ValueType, N, KeyElementType>::index_t AABBTree<ValueType, N, KeyElementType>::balance(
-    AABBTree::index_t iA) {
+index_t AABBTree<ValueType, N, KeyElementType>::balance(index_t iA) {
 	const auto max = [](uint a, uint b) { return a > b ? a : b; };
 
 	Node& A = _nodes[iA];
@@ -387,12 +250,6 @@ typename AABBTree<ValueType, N, KeyElementType>::index_t AABBTree<ValueType, N, 
 			C.height = 1 + max(A.height, G.height);
 		}
 
-		assert(A.child1 != nullindex && A.child2 != nullindex);
-		assert(C.child1 != nullindex && C.child2 != nullindex);
-
-		assert(C.parent == nullindex || (_nodes[C.parent].child1 && _nodes[C.parent].child2));
-
-		//		validate();
 		return iC;
 	};
 
@@ -409,7 +266,7 @@ typename AABBTree<ValueType, N, KeyElementType>::index_t AABBTree<ValueType, N, 
 }
 
 template<class ValueType, uint N, class KeyElementType>
-void AABBTree<ValueType, N, KeyElementType>::removeLeaf(AABBTree::index_t leafIdx) {
+void AABBTree<ValueType, N, KeyElementType>::removeLeaf(index_t leafIdx) {
 	if (leafIdx == _root) {
 		_root = nullindex;
 
@@ -455,14 +312,20 @@ void AABBTree<ValueType, N, KeyElementType>::removeLeaf(AABBTree::index_t leafId
 }
 
 template<class ValueType, uint N, class KeyElementType>
-void AABBTree<ValueType, N, KeyElementType>::remove(AABBTree::index_t idx) {
+void AABBTree<ValueType, N, KeyElementType>::remove(index_t idx) {
 	assert(_nodes[idx].isLeaf());
 
 	removeLeaf(idx);
 	_data.remove(_nodes[idx].dataIdx);
 	_nodes.remove(idx);
+}
 
-	validate();
+template<class ValueType, uint N, class KeyElementType>
+template<class AABBType, typename T>
+void AABBTree<ValueType, N, KeyElementType>::query(const AABBType& uaabb, const T& callback) const {
+	AABBTree::AABB_t aabb;
+	aabb.template set(uaabb);
+	query(aabb, callback);
 }
 
 template<class ValueType, uint N, class KeyElementType>
@@ -493,35 +356,17 @@ void AABBTree<ValueType, N, KeyElementType>::query(const AABBTree::AABB_t& aabb,
 }
 
 template<class ValueType, uint N, class KeyElementType>
-ValueType& AABBTree<ValueType, N, KeyElementType>::operator[](AABBTree::index_t idx) {
+ValueType& AABBTree<ValueType, N, KeyElementType>::operator[](index_t idx) {
 	assert(_nodes[idx].isLeaf());
 
-	return _data[_nodes[idx].dataIdx];
+	return _data[_nodes[idx].dataIdx].data;
 }
 
 template<class ValueType, uint N, class KeyElementType>
-const ValueType& AABBTree<ValueType, N, KeyElementType>::operator[](AABBTree::index_t idx) const {
+const ValueType& AABBTree<ValueType, N, KeyElementType>::operator[](index_t idx) const {
 	assert(_nodes[idx].isLeaf());
 
 	return _data[_nodes[idx].dataIdx];
-}
-
-template<class ValueType, uint N, class KeyElementType>
-void AABBTree<ValueType, N, KeyElementType>::validate() const {
-	int count = 0;
-	for (const auto& node : _nodes) {
-		count += node.isLeaf();
-	}
-	assert(count == _data.count());
-
-	for (index_t idx = 0; idx != _nodes.capacity(); ++idx) {
-		if (!_nodes.contains(idx)) {
-			continue;
-		}
-
-		assert(_nodes[idx].parent == nullindex || _nodes[_nodes[idx].parent].child1 == idx ||
-		       _nodes[_nodes[idx].parent].child2 == idx);
-	}
 }
 
 template<class ValueType, uint N, class KeyElementType>
@@ -531,7 +376,7 @@ uint AABBTree<ValueType, N, KeyElementType>::count() const {
 
 template<class ValueType, uint N, class KeyElementType>
 void AABBTree<ValueType, N, KeyElementType>::update(
-    AABBTree::index_t idx, const AABBTree::AABB_t& aabb, const typename AABB_t::Vec_t& displacement) {
+    index_t idx, const AABBTree::AABB_t& aabb, const typename AABB_t::Vec_t& displacement) {
 	AABB_t extAABB;
 	const typename AABB_t::Vec_t r(_aabbExtension);
 	if (_aabbExtension != KeyElementType{0}) {
@@ -577,4 +422,13 @@ void AABBTree<ValueType, N, KeyElementType>::update(
 	insertLeaf(idx);
 }
 
+template<class ValueType, uint N, class KeyElementType>
+template<class AABBType, class VecType>
+void AABBTree<ValueType, N, KeyElementType>::update(index_t idx, const AABBType& aabb, const VecType& displacement) {
+	AABBTree::AABB_t nAabb;
+	nAabb.set(aabb);
+	typename AABB_t::Vec_t nDisplacement;
+	nDisplacement.set(displacement);
+	update(idx, nAabb, nDisplacement);
+}
 } // namespace biss

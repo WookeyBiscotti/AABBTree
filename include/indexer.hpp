@@ -6,10 +6,6 @@
 
 namespace biss {
 
-using uint = unsigned long;
-
-constexpr uint nullindex = uint(-1) >> 1;
-
 template<class Data>
 class Indexer {
   private:
@@ -46,8 +42,8 @@ class Indexer {
 
 	class Iterator {
 	  public:
-		auto& operator*();
-		auto& operator->();
+		auto& operator*() const;
+		auto& operator->() const;
 
 		const auto operator++(int);
 		const auto operator++();
@@ -55,11 +51,14 @@ class Indexer {
 		bool operator==(const Iterator& other) const;
 		bool operator!=(const Iterator& other) const;
 
-	  private:
-		friend class Indexer;
-		Iterator(Node* it, Node* end): _it(it), _end(end) {}
+		index_t idx() const { return _it - _begin; }
 
 	  private:
+		friend class Indexer;
+		Iterator(Node* begin, Node* it, Node* end): _begin(begin), _it(it), _end(end) {}
+
+	  private:
+		Node* _begin;
 		Node* _it;
 		Node* _end;
 	};
@@ -77,14 +76,14 @@ class Indexer {
 };
 
 template<class Data>
-auto& Indexer<Data>::Iterator::operator*() {
+auto& Indexer<Data>::Iterator::operator*() const {
 	assert(_it && !_it->free);
 
 	return _it->data;
 }
 
 template<class Data>
-auto& Indexer<Data>::Iterator::operator->() {
+auto& Indexer<Data>::Iterator::operator->() const {
 	assert(_it && !_it->free);
 
 	return _it->data;
@@ -103,7 +102,7 @@ template<class Data>
 const auto Indexer<Data>::Iterator::operator++() {
 	assert(_it);
 
-	auto copy = Iterator(_it, _end);
+	auto copy = Iterator(_begin, _it, _end);
 	while (++_it != _end && _it->free) {}
 
 	return copy;
@@ -246,7 +245,7 @@ template<class Data>
 typename Indexer<Data>::Iterator Indexer<Data>::begin() const {
 	for (uint i = 0; i != _capacity; ++i) {
 		if (!_nodes[i].free) {
-			return Indexer::Iterator(_nodes + i, _nodes + _capacity);
+			return Indexer::Iterator(_nodes, _nodes + i, _nodes + _capacity);
 		}
 	}
 
@@ -256,7 +255,7 @@ typename Indexer<Data>::Iterator Indexer<Data>::begin() const {
 template<class Data>
 typename Indexer<Data>::Iterator Indexer<Data>::end() const {
 	const auto end = _nodes + _capacity;
-	return Indexer::Iterator(end, end);
+	return Indexer::Iterator(_nodes, end, end);
 }
 
 template<class Data>
