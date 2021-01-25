@@ -15,16 +15,6 @@ if(${BUILD_TESTS})
 
 	set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
 
-#	ExternalProject_Add(catch2
-#			PREFIX ${PROJECT_SOURCE_DIR}/tests/3rdparty/Catch2
-#			GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-#			GIT_TAG v2.13.4
-#			CONFIGURE_COMMAND ""
-#			BUILD_COMMAND ""
-#			INSTALL_COMMAND ""
-#			LOG_DOWNLOAD ON
-#			)
-
 	ExternalProject_Add(catch2
 			GIT_REPOSITORY https://github.com/catchorg/Catch2.git
 			CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
@@ -38,7 +28,6 @@ if(${BUILD_TESTS})
 
 	add_executable(indexer_TESTS tests/catch2_main.cpp tests/tests.cpp)
 	add_dependencies(indexer_TESTS catch2)
-
 
 	target_link_libraries(indexer_TESTS indexer)
 endif()

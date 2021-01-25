@@ -17,6 +17,8 @@ class AABBTree {
 
 	template<class... Args>
 	index_t emplace(const AABB_t& aabb, Args&&... args);
+	template<class AABBType, class... Args>
+	index_t emplace(const AABBType& aabb, Args&&... args);
 
 	void remove(index_t idx);
 
@@ -178,7 +180,7 @@ index_t AABBTree<ValueType, N, KeyElementType>::emplace(const AABBTree::AABB_t& 
 		leaf.aabb = AABB_t{aabb.lb - r, aabb.ub + r};
 	} else {
 		leaf.aabb = aabb;
-	};
+	}
 	leaf.dataIdx = dataIdx;
 	leaf.height = 0;
 	leaf.child1 = leaf.child2 = leaf.parent = nullindex;
@@ -430,5 +432,14 @@ void AABBTree<ValueType, N, KeyElementType>::update(index_t idx, const AABBType&
 	typename AABB_t::Vec_t nDisplacement;
 	nDisplacement.set(displacement);
 	update(idx, nAabb, nDisplacement);
+}
+
+template<class ValueType, uint N, class KeyElementType>
+template<class AABBType, class... Args>
+index_t AABBTree<ValueType, N, KeyElementType>::emplace(const AABBType& aabb, Args&&... args) {
+	AABBTree::AABB_t nAabb;
+	nAabb.set(aabb);
+
+	return emplace(nAabb);
 }
 } // namespace biss
