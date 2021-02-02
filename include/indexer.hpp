@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <new>
 #include <utility>
 
 namespace biss {
@@ -47,6 +48,8 @@ class Indexer {
 
 		const auto operator++(int);
 		const auto operator++();
+
+		const auto operator+(int d);
 
 		bool operator==(const Iterator& other) const;
 		bool operator!=(const Iterator& other) const;
@@ -116,6 +119,14 @@ bool Indexer<Data>::Iterator::operator==(const Indexer::Iterator& other) const {
 template<class Data>
 bool Indexer<Data>::Iterator::operator!=(const Indexer::Iterator& other) const {
 	return !operator==(other);
+}
+template<class Data>
+const auto Indexer<Data>::Iterator::operator+(int d) {
+	assert(_it + d < _end);
+
+	_it += d;
+
+	return *this;
 }
 
 template<class Data>
@@ -190,7 +201,7 @@ typename Indexer<Data>::index_t Indexer<Data>::emplace(Args&&... args) {
 			newNode.free = node.free;
 			newNode.next = node.next;
 			if constexpr (std::is_nothrow_move_constructible_v<Data>) {
-				new (&newNode.data) Data(std::move(node.data));
+				new ((void*)&newNode.data) Data(std::move(node.data));
 			} else {
 				new (&newNode.data) Data(node.data);
 			}
@@ -289,4 +300,10 @@ template<class Data>
 bool Indexer<Data>::contains(Indexer::index_t idx) const {
 	return idx < _capacity && !_nodes[idx].free;
 }
+
+template<class Data>
+typename Indexer<Data>::Iterator operator+(const typename Indexer<Data>::Iterator& it, int d) {
+	return typename Indexer<Data>::Iterator{it} + d;
+}
+
 } // namespace biss

@@ -10,7 +10,7 @@ namespace biss {
 template<class ValueType, uint N, class KeyElementType>
 class AABBTree {
   public:
-	using AABB_t = AABB<KeyElementType, N>;
+	using AABB_t = AABB<N, KeyElementType>;
 	using Iterator = AABBTreeIterator<ValueType>;
 
 	explicit AABBTree(KeyElementType aabbExtension = 0, KeyElementType aabbMultiplier = 0) noexcept;
@@ -30,7 +30,7 @@ class AABBTree {
 	void update(
 	    index_t idx, const AABB_t& aabb, const typename AABB_t::Vec_t& displacement = typename AABB_t::Vec_t(0));
 	template<class AABBType, class VecType>
-	void update(index_t idx, const AABBType& aabb, const VecType& displacement);
+	void update(index_t idx, const AABBType& aabb, const VecType& displacement = VecType{});
 
 	ValueType& operator[](index_t idx);
 	const ValueType& operator[](index_t idx) const;
@@ -176,7 +176,7 @@ index_t AABBTree<ValueType, N, KeyElementType>::emplace(const AABBTree::AABB_t& 
 
 	Node& leaf = _nodes[leafIdx];
 	if (_aabbExtension != KeyElementType{0}) {
-		const Vec<KeyElementType, N> r(_aabbExtension);
+		const Vec<N, KeyElementType> r(_aabbExtension);
 		leaf.aabb = AABB_t{aabb.lb - r, aabb.ub + r};
 	} else {
 		leaf.aabb = aabb;
@@ -346,7 +346,7 @@ void AABBTree<ValueType, N, KeyElementType>::query(const AABBTree::AABB_t& aabb,
 
 		if (node.aabb.isIntersecting(aabb)) {
 			if (node.isLeaf()) {
-				if (!callback(nodeIdx)) {
+				if (!callback(_data.begin() + node.dataIdx)) {
 					return;
 				}
 			} else {
@@ -440,6 +440,6 @@ index_t AABBTree<ValueType, N, KeyElementType>::emplace(const AABBType& aabb, Ar
 	AABBTree::AABB_t nAabb;
 	nAabb.set(aabb);
 
-	return emplace(nAabb);
+	return emplace(nAabb, std::forward<Args>(args)...);
 }
 } // namespace biss

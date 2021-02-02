@@ -10,9 +10,9 @@ Type get_lb(uint i, const UserAABBType& aabb);
 template<class UserAABBType, class Type>
 Type get_ub(uint i, const UserAABBType& aabb);
 
-template<class Type, uint N>
+template<uint N, class Type>
 struct AABB {
-	using Vec_t = biss::Vec<Type, N>;
+	using Vec_t = biss::Vec<N, Type>;
 
 	Vec_t lb; // lowerBound
 	Vec_t ub; // upperBound
@@ -99,8 +99,8 @@ struct AABB {
 };
 
 template<class Type, uint N>
-AABB<Type, N> unite(const AABB<Type, N>& aabb1, const AABB<Type, N>& aabb2) {
-	return AABB<Type, N>{aabb1}.unite(aabb2);
+AABB<N, Type> unite(const AABB<N, Type>& aabb1, const AABB<N, Type>& aabb2) {
+	return AABB<N, Type>{aabb1}.unite(aabb2);
 }
 
 } // namespace biss

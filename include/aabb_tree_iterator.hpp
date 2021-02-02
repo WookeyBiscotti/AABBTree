@@ -8,10 +8,10 @@ namespace biss {
 template<class ValueType>
 class AABBTreeIterator {
   public:
-    AABBTreeIterator(typename Indexer<AABBTreeData<ValueType>>::Iterator it): _it(it) {}
+	AABBTreeIterator(typename Indexer<AABBTreeData<ValueType>>::Iterator it): _it(it) {}
 
-	auto& operator*() { return _it.operator->().data; }
-	auto& operator->() { return _it->data; }
+	ValueType& operator*() const { return _it.operator->().data; }
+	ValueType& operator->() const { return _it->data; }
 
 	const auto operator++(int) { return _it++; }
 	const auto operator++() { return ++_it; }

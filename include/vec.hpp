@@ -7,7 +7,7 @@ namespace biss {
 template<class UserVecType, class Type>
 Type get(uint i, const UserVecType& v);
 
-template<class Type, uint N>
+template<uint N, class Type>
 struct Vec {
 	Type point[N];
 
@@ -53,21 +53,21 @@ struct Vec {
 		return *this;
 	}
 };
-template<class Type, uint N>
-Vec<Type, N> operator-(const Vec<Type, N>& a, const Vec<Type, N>& b) {
-	return Vec<Type, N>{a} -= b;
+template<uint N, class Type>
+Vec<N, Type> operator-(const Vec<N, Type> & a, const Vec<N, Type> & b) {
+	return Vec<N, Type> {a} -= b;
 }
-template<class Type, uint N>
-Vec<Type, N> operator+(const Vec<Type, N>& a, const Vec<Type, N>& b) {
-	return Vec<Type, N>{a} += b;
+template<uint N, class Type>
+Vec<N, Type> operator+(const Vec<N, Type> & a, const Vec<N, Type> & b) {
+	return Vec<N, Type> {a} += b;
 }
-template<class Type, uint N>
-Vec<Type, N> operator*(const Vec<Type, N>& a, Type b) {
-	return Vec<Type, N>{a} *= b;
+template<uint N, class Type>
+Vec<N, Type> operator*(const Vec<N, Type> & a, Type b) {
+	return Vec<N, Type> {a} *= b;
 }
-template<class Type, uint N>
-Vec<Type, N> operator*(Type b, const Vec<Type, N>& a) {
-	return Vec<Type, N>{a} *= b;
+template<uint N, class Type>
+Vec<N, Type> operator*(Type b, const Vec<N, Type> & a) {
+	return Vec<N, Type> {a} *= b;
 }
 
 } // namespace biss
