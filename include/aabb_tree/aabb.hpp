@@ -17,6 +17,9 @@ struct AABB {
 	Vec_t lb; // lowerBound
 	Vec_t ub; // upperBound
 
+	AABB(const Vec_t& l, const Vec_t& u): lb(l), ub(u) {}
+	AABB() = default;
+
 	auto& unite(const AABB& other) {
 		for (uint i = 0; i != N; ++i) {
 			if (lb.point[i] > other.lb.point[i]) {

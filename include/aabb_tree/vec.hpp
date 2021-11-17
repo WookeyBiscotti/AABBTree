@@ -17,6 +17,12 @@ struct Vec {
 			point[i] = val;
 		}
 	}
+
+	Vec(Type val0, Type val1) {
+		point[0] = val0;
+		point[1] = val1;
+	}
+
 	auto& operator+=(const Vec& other) {
 		for (uint i = 0; i != N; ++i) {
 			point[i] += other.point[i];
@@ -54,20 +60,20 @@ struct Vec {
 	}
 };
 template<uint N, class Type>
-Vec<N, Type> operator-(const Vec<N, Type> & a, const Vec<N, Type> & b) {
-	return Vec<N, Type> {a} -= b;
+Vec<N, Type> operator-(const Vec<N, Type>& a, const Vec<N, Type>& b) {
+	return Vec<N, Type>{a} -= b;
 }
 template<uint N, class Type>
-Vec<N, Type> operator+(const Vec<N, Type> & a, const Vec<N, Type> & b) {
-	return Vec<N, Type> {a} += b;
+Vec<N, Type> operator+(const Vec<N, Type>& a, const Vec<N, Type>& b) {
+	return Vec<N, Type>{a} += b;
 }
 template<uint N, class Type>
-Vec<N, Type> operator*(const Vec<N, Type> & a, Type b) {
-	return Vec<N, Type> {a} *= b;
+Vec<N, Type> operator*(const Vec<N, Type>& a, Type b) {
+	return Vec<N, Type>{a} *= b;
 }
 template<uint N, class Type>
-Vec<N, Type> operator*(Type b, const Vec<N, Type> & a) {
-	return Vec<N, Type> {a} *= b;
+Vec<N, Type> operator*(Type b, const Vec<N, Type>& a) {
+	return Vec<N, Type>{a} *= b;
 }
 
 } // namespace biss
